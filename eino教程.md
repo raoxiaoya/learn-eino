@@ -2,6 +2,8 @@ cloudwego - eino 使用教程
 
 
 
+### 参考
+
 文档开始：https://www.cloudwego.io/zh/docs/eino/
 
 eino：https://github.com/cloudwego/eino
@@ -9,6 +11,8 @@ eino：https://github.com/cloudwego/eino
 eino-examples：[https://github.com/cloudwego/eino-examples](https://github.com/cloudwego/eino-examples/tree/main/quickstart/eino_assistant)
 
 
+
+### Qwen模型
 
 dashscope 的 key：https://dashscope.console.aliyun.com/apiKey，后来升级为阿里云百炼，但是系统是打通的，key 也是一样的。
 
@@ -42,7 +46,7 @@ github.com/getkin/kin-openapi v0.118.0
 
 
 
-### 二、实践
+### 二、chat 实践
 
 ```go
 package main
@@ -149,11 +153,9 @@ func main() {
 
 
 
-实践：[Eino 智能助手](https://www.cloudwego.io/zh/docs/eino/overview/bytedance_eino_practice/)
+### 三、接通 Elasticsearch
 
-
-
-可能是本机有点老旧，导致 docker redis-stack 无法正常运行，于是改用更笨重的 ES8
+可能是本机有点老旧，导致 docker redis-stack 无法正常运行，于是改用 ES8
 
 文档：https://www.cloudwego.io/zh/docs/eino/ecosystem_integration/indexer/indexer_es8/
 
@@ -258,7 +260,7 @@ set ES_HTTP_CA_CERT_PATH=
 
 
 
-### 写入数据
+#### 写入数据
 
 在 vscode 中使用 eino dev 工具编排graph
 
@@ -418,7 +420,7 @@ index success
 
 
 
-### 检索数据
+#### 检索数据
 
 ```bash
 package main
@@ -580,9 +582,9 @@ Query{…} (value of type *"github.com/elastic/go-elasticsearch/v8/typedapi/type
 
 
 
+### 四、Eino 智能助手
 
-
-
+文档：[Eino 智能助手](https://www.cloudwego.io/zh/docs/eino/overview/bytedance_eino_practice/)
 
 
 
@@ -590,7 +592,7 @@ eino dev 可以将编排好的 graph 导出为 json schema，也可以导入 jso
 
 于是，可以将 `eino-examples/quickstart/eino_assistant/eino/eino_agent.json`导入进来，但是这里面还是有问题，需要自行完善。
 
-
+![image-20251218112802680](D:\dev\php\magook\trunk\server\md\img\image-20251218112802680.png)
 
 
 

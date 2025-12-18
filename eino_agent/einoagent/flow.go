@@ -8,8 +8,8 @@ import (
 	"github.com/cloudwego/eino/flow/agent/react"
 )
 
-// newLambda1 component initialization function of node 'ReactAgent' in graph 'EinoAgentEs8'
-func newLambda1(ctx context.Context) (lba *compose.Lambda, err error) {
+// reactAgentLambda component initialization function of node 'ReactAgent' in graph 'EinoAgentEs8'
+func reactAgentLambda(ctx context.Context) (lba *compose.Lambda, err error) {
 	// TODO Modify component configuration here.
 	config := &react.AgentConfig{
 		MaxStep:            25,

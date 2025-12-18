@@ -23,7 +23,7 @@ func BuildEinoAgentEs8(ctx context.Context) (r compose.Runnable[*UserMessage, *s
 		return nil, err
 	}
 	_ = g.AddChatTemplateNode(ChatTemplate, chatTemplateKeyOfChatTemplate)
-	reactAgentKeyOfLambda, err := newLambda1(ctx)
+	reactAgentKeyOfLambda, err := reactAgentLambda(ctx)
 	if err != nil {
 		return nil, err
 	}
