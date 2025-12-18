@@ -56,6 +56,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+    "os"
 
 	"github.com/cloudwego/eino-ext/components/model/qwen"
 	"github.com/cloudwego/eino/components/prompt"
@@ -96,7 +97,7 @@ func getQwenChatModel() (*qwen.ChatModel, error) {
 	chatModel, err := qwen.NewChatModel(context.Background(), &qwen.ChatModelConfig{
 		BaseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
 		Model:   "qwen-max",
-		APIKey:  "xxxxxxxxxxxxxxxxxxx",
+		APIKey:  os.Getenv("DASHSCOPE_API_KEY"),
 	})
 	return chatModel, err
 }
@@ -193,8 +194,6 @@ npm run start
 
 在API KEY管理创建一个API KEY
 
-API KEY：`0928b3fd-6922-41fb-9f1c-ca5ef01e8b85`
-
 
 
 在开通管理需要将上面两个模型手动点击开通，提供了免费额度。
@@ -202,7 +201,7 @@ API KEY：`0928b3fd-6922-41fb-9f1c-ca5ef01e8b85`
 ```bash
 curl https://ark.cn-beijing.volces.com/api/v3/embeddings \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer 0928b3fd-6922-41fb-9f1c-ca5ef01e8b85" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
   -d $'{
     "encoding_format": "float",
     "input": [
@@ -590,28 +589,43 @@ Query{…} (value of type *"github.com/elastic/go-elasticsearch/v8/typedapi/type
 
 eino dev 可以将编排好的 graph 导出为 json schema，也可以导入 json schema 来创建graph。
 
-于是，可以将 `eino-examples/quickstart/eino_assistant/eino/eino_agent.json`导入进来，但是这里面还是有问题，需要自行完善。
+于是，可以将 `eino-examples/quickstart/eino_assistant/eino/eino_agent.json`导入进来，但是这里面还是有问题，需要自行完善，修改完后导出到`eino_agent_es8.json`
 
 ![image-20251218112802680](D:\dev\php\magook\trunk\server\md\img\image-20251218112802680.png)
 
-
+创建一个`.env`文件，就是上面的配置内容
 
 ```bash
-Error running agent: failed to build agent graph: graph edge[Retriever1]-[ChatTemplate]: start node's output type[[]*schema.Document
-] and end node's input type[map[string]interface {}] mismatch
+> cd learn-eino\eino_agent\cmd\einoagent
+> go build .
+> einoagent.exe
 ```
 
+访问：http://127.0.0.1:8080/agent/
 
 
-`Variables`是由用户来维护的，在源码中就是随处可见的`vs map[string]any`，比如在 `lambda`中，在 `chatTemplate`中定义的 key
+
+会出来一条会话历史记录，这是来自 `data/memory`
+
+然后提问`eino能做什么`
+
+![image-20251218114424322](D:\dev\php\magook\trunk\server\md\img\image-20251218114424322.png)
+
+
+
+右下角是日志，同时在 log 目录下也能看到。
+
+
+
+**一些说明**
 
 template role： system, user, tool, assistant
 
 system message 在这里是指令，告诉智能体大致要做什么
 
-assistant message由agent输出，说明调用哪些tool
+assistant message 由agent输出，说明调用哪些tool
 
-tool message由agent输出，说明调用了哪个工具，参数和结果是什么
+tool message 由agent输出，说明调用了哪个工具，参数和结果是什么
 
 
 
@@ -620,6 +634,12 @@ tool message由agent输出，说明调用了哪个工具，参数和结果是什
 在 eino 中，使用 Variables 中的字段的时候，如果不存在这个key，那么是会报错的。
 
 
+
+`FormatType: schema.FString`是使用`{variable}` 语法进行变量替换，简单直观，适合基础文本替换场景。示例：`"你是一个{role}，请帮我{task}。"`
+
+
+
+`Variables`是由用户来维护的，在源码中就是随处可见的`vs map[string]any`，比如在 `lambda`中，在 `chatTemplate`中定义的 key
 
 ```json
 {"Variables":
@@ -638,9 +658,63 @@ tool message由agent输出，说明调用了哪个工具，参数和结果是什
 
 
 
-```bash
+`DocumentListToMapLambda`节点的作用是数据格式转换，因为 es8 的输出是`[]*schema.Document`，而 chatTemplate 的输入是 `map[string]any`，这会导致报错。
 
+```bash
+Error running agent: failed to build agent graph: graph edge[Retriever1]-[ChatTemplate]: start node's output type[[]*schema.Document
+] and end node's input type[map[string]interface {}] mismatch
 ```
+
+我们将其转换到`Variables`中的`retriever_result`。这样就可以将查询到的内容放到 prompt 中去，使用`{retriever_result}`
+
+```go
+// 将 []*schema.Document 转换成 map[string]any
+func documentListToMapLambda(ctx context.Context, input []*schema.Document, opts ...any) (output map[string]any, err error) {
+	var contents []string
+	for _, doc := range input {
+		contents = append(contents, doc.Content)
+	}
+	contextText := strings.Join(contents, "\n\n")
+
+	return map[string]interface{}{
+		"retriever_result": contextText,
+	}, nil
+}
+```
+
+
+
+关于 tools_node，这里并没有调用到，因为 es8 已经查询到内容了，关于 tool 的使用说明：https://www.cloudwego.io/zh/docs/eino/core_modules/components/tools_node_guide/how_to_create_a_tool/
+
+tool 的返回值是字符串，但最好定义为 json string，语义清晰，方便大模型理解
+
+```go
+return `{"status": "success", "result": "tool1 result"}`, nil
+```
+
+
+
+`React -- Tools -- ChatModel` 的执行流程 https://www.cloudwego.io/zh/docs/eino/core_modules/flow_integration_components/react_agent_manual/
+
+![image-20251218144359711](D:\dev\php\magook\trunk\server\md\img\image-20251218144359711.png)
+
+`React`调用 Tool ，得到结果后，将其追加到 ChatModel 的 input message，其 role 为 tool，这样 ChatModel 就会综合这些 messages 来做应答。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

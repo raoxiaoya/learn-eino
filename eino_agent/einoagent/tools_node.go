@@ -45,7 +45,7 @@ func (impl *Tool1Impl) Info(ctx context.Context) (*schema.ToolInfo, error) {
 }
 
 func (impl *Tool1Impl) InvokableRun(ctx context.Context, argumentsInJSON string, opts ...tool.Option) (string, error) {
-	return "tool1 result", nil
+	return `{"status": "success", "result": "tool1 result"}`, nil
 }
 
 type Tool2Impl struct {
@@ -70,7 +70,7 @@ func (impl *Tool2Impl) Info(ctx context.Context) (*schema.ToolInfo, error) {
 }
 
 func (impl *Tool2Impl) InvokableRun(ctx context.Context, argumentsInJSON string, opts ...tool.Option) (string, error) {
-	return "tool2 result", nil
+	return `{"status": "success", "result": "tool2 result"}`, nil
 }
 
 type Tool3Impl struct {
@@ -95,7 +95,7 @@ func (impl *Tool3Impl) Info(ctx context.Context) (*schema.ToolInfo, error) {
 }
 
 func (impl *Tool3Impl) InvokableRun(ctx context.Context, argumentsInJSON string, opts ...tool.Option) (string, error) {
-	return "tool3 result", nil
+	return `{"status": "success", "result": "tool3 result"}`, nil
 }
 
 type Tool4Impl struct {
@@ -120,5 +120,5 @@ func (impl *Tool4Impl) Info(ctx context.Context) (*schema.ToolInfo, error) {
 }
 
 func (impl *Tool4Impl) InvokableRun(ctx context.Context, argumentsInJSON string, opts ...tool.Option) (string, error) {
-	return "tool4 result", nil
+	return `{"status": "success", "result": "tool4 result"}`, nil
 }
