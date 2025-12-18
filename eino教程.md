@@ -702,7 +702,21 @@ return `{"status": "success", "result": "tool1 result"}`, nil
 
 
 
+界面右上角的 Task Manager 是一个任务管理系统，任务的增删改查，同时提供了API。然后在 `util/tool/task`目录下有实现逻辑。因此你可以将 task tool 编排进 eino_agent，以此让 eino_agent 可以管理任务系统。
 
+
+
+
+
+### 观测(可选)
+
+##### APMPlus
+
+如果在运行时，在 .env 文件中指定了 `APMPLUS_APP_KEY`，便可在 [火山引擎 APMPlus](https://console.volcengine.com/apmplus-server) 平台中，登录对应的账号，查看 Trace 以及 Metrics 详情。
+
+##### Langfuse
+
+如果在运行时，在 .env 文件中指定了 `LANGFUSE_PUBLIC_KEY` 和 `LANGFUSE_SECRET_KEY`，便可在 Langfuse 平台中，登录对应的账号，查看请求的 Trace 详情。
 
 
 
