@@ -706,6 +706,64 @@ return `{"status": "success", "result": "tool1 result"}`, nil
 
 
 
+### 工具调用
+
+将 task tool 添加到 flow 中
+
+```go
+// flow.go
+
+taskTool, err := task.NewTaskTool(ctx, nil)
+config.ToolsConfig.Tools = []tool.BaseTool{toolIns21, toolIns22, toolIns23, toolIns24, toolIns25, taskTool}
+```
+
+提示词
+
+```bash
+帮我在task manager系统创建一个任务：
+标题：eino_agent任务标题；
+内容：eino_agent任务标题；
+截止时间：2025-12-25T15:15
+```
+
+日志
+
+```json
+{
+    "role":"assistant",
+    "content":"我来帮你创建一个任务。首先，我需要将你提供的截止时间格式转换为任务管理器需要的格式。\n\n",
+    "tool_calls":[
+        {
+            "index":0,
+            "id":"call_akjdswsyvkwv47khha8dnp1p",
+            "type":"function",
+            "function":{
+                "name":"task_manager",
+                "arguments":"{\"action\": \"add\", \"task\": {\"id\": \"task_\" + Math.random().toString(36).substr(2, 9), \"title\": \"eino_agent任务标题\", \"content\": \"eino_agent任务标题\", \"completed\": false, \"deadline\": \"2025-12-25T15:15:00Z\", \"created_at\": new Date().toISOString()}, \"list\": {\"query\": \"\", \"is_done\": false, \"limit\": 10}}"
+            }
+        }
+]
+```
+
+但是并没有创建任务，也没有调用对应的 invoke 方法。
+
+```bash
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ### 观测(可选)
@@ -717,8 +775,6 @@ return `{"status": "success", "result": "tool1 result"}`, nil
 ##### Langfuse
 
 如果在运行时，在 .env 文件中指定了 `LANGFUSE_PUBLIC_KEY` 和 `LANGFUSE_SECRET_KEY`，便可在 Langfuse 平台中，登录对应的账号，查看请求的 Trace 详情。
-
-
 
 
 

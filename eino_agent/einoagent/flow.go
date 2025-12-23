@@ -2,6 +2,7 @@ package einoagent
 
 import (
 	"context"
+	"learn-eino/util/tool/task"
 
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/compose"
@@ -39,7 +40,8 @@ func reactAgentLambda(ctx context.Context) (lba *compose.Lambda, err error) {
 	if err != nil {
 		return nil, err
 	}
-	config.ToolsConfig.Tools = []tool.BaseTool{toolIns21, toolIns22, toolIns23, toolIns24, toolIns25}
+	taskTool, err := task.NewTaskTool(ctx, nil)
+	config.ToolsConfig.Tools = []tool.BaseTool{toolIns21, toolIns22, toolIns23, toolIns24, toolIns25, taskTool}
 	ins, err := react.NewAgent(ctx, config)
 	if err != nil {
 		return nil, err
