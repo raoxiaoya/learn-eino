@@ -747,8 +747,99 @@ config.ToolsConfig.Tools = []tool.BaseTool{toolIns21, toolIns22, toolIns23, tool
 
 但是并没有创建任务，也没有调用对应的 invoke 方法。
 
-```bash
+报错
 
+```bash
+2025/12/24 10:49:56 error publishing log: write tcp 127.0.0.1:8080->127.0.0.1:52071: wsasend: An established connection was aborted by the software in your host machine.
+```
+
+
+
+```go
+type InvokableTool interface {
+    BaseTool
+
+    // InvokableRun call function with arguments in JSON format
+    InvokableRun(ctx context.Context, argumentsInJSON string, opts ...Option) (string, error)
+}
+
+```
+
+写一个测试文件
+
+```go
+func main() {
+	ctx := context.Background()
+	taskTool, err := task.NewTaskTool(ctx, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	str, _ := json.Marshal(task.TaskRequest{
+		Action: task.ActionAdd,
+		Task: &task.Task{
+			Title:    "test task",
+			Content:  "test content",
+			Deadline: "2025-12-30 12:12:12",
+		},
+	})
+
+	tt, ok := taskTool.(tool.InvokableTool)
+	if !ok {
+		panic("taskTool is not InvokableTool")
+	}
+	res, err := tt.InvokableRun(ctx, string(str))
+	if err != nil {
+		panic(err)
+	}
+	println(res)
+}
+```
+
+```bash
+{"status":"success","task_list":[{"id":"905bbad6-690a-4e98-85e6-41d9232e6f9d","title":"test task","content":"test content","completed":false,"deadline":"202
+5-12-30 12:12:12","is_deleted":false,"created_at":"2025-12-25T14:48:06+08:00"}],"error":""}
+```
+
+发现它是能正常写入的
+
+```json
+{"id":"f0a28183-ef37-416a-87c4-5e957fbe969d","title":"test task","content":"test content","completed":false,"deadline":"2025-12-30 12:12:12","is_deleted":false,"created_at":"2025-12-23T18:16:33+08:00"}
+```
+
+```bash
+在eino项目中搜索InvokableRun，找到compose/tool_node.go:553的 Invoke方法
+
+在 flow/agent/react.go 中，将 tools 作为一个key为tools的节点，注入到 graph.nodes 数组中（先将 ToolsNode 转换成 graphNode），name 为 Tools
+
+在graph.go中，Graph编译时为每个节点创建chanCall对象，每个chanCall包含节点的composableRunnable和其他执行信息。
+
+在graph_run.go的runner.run方法中，计算下一个要执行的任务
+调用taskManager.submit提交任务
+```
+
+在`graph_manager.go`的`taskManager.execute`方法中，使用`runWrapper`调用节点：
+
+```go
+currentTask.output, currentTask.err = t.runWrapper(ctx, currentTask.call.action, currentTask.input, currentTask.option...)
+```
+
+- `runWrapper`根据调用类型（流式/非流式）使用`runnableInvoke`或`runnableTransform`
+- 最终调用`composableRunnable`的`i`（invoke）或`t`（transform）方法，执行节点的实际功能
+
+
+
+### 关键组件
+
+- **composableRunnable**：在`runnable.go`中定义，是所有可执行对象的包装器
+- **taskManager**：管理任务的提交、执行和结果收集
+- **runner**：Graph的执行器，负责协调整个执行流程
+
+
+
+
+
+```bash
 
 ```
 
@@ -782,15 +873,7 @@ config.ToolsConfig.Tools = []tool.BaseTool{toolIns21, toolIns22, toolIns23, tool
 
 
 
-
-
-
-
-
-
-
-
-
+--------------------
 
 
 

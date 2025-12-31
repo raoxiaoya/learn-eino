@@ -19,6 +19,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/components/tool/utils"
@@ -124,6 +125,13 @@ func (t *TaskToolImpl) ToEinoTool() (tool.BaseTool, error) {
 }
 
 func (t *TaskToolImpl) Invoke(ctx context.Context, req *TaskRequest) (res *TaskResponse, err error) {
+	if req != nil {
+		log.Println(req.Action)
+		if req.Task != nil {
+			log.Println(req.Task.Content)
+		}
+	}
+
 	res = &TaskResponse{}
 
 	switch req.Action {

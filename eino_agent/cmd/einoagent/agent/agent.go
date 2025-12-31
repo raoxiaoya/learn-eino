@@ -32,7 +32,7 @@ import (
 	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
 
-	"learn-eino/eino_agent/einoagent"
+	"learn-eino/eino_agent/einoagenttools"
 	"learn-eino/util/mem"
 )
 
@@ -106,14 +106,14 @@ func Init() error {
 
 func RunAgent(ctx context.Context, id string, msg string) (*schema.StreamReader[*schema.Message], error) {
 
-	runner, err := einoagent.BuildEinoAgentEs8(ctx)
+	runner, err := einoagenttools.BuildEinoAgentTools(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build agent graph: %w", err)
 	}
 
 	conversation := memory.GetConversation(id, true)
 
-	userMessage := &einoagent.UserMessage{
+	userMessage := &einoagenttools.UserMessage{
 		ID:      id,
 		Query:   msg,
 		History: conversation.GetMessages(),

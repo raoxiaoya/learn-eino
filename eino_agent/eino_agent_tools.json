@@ -1,5 +1,5 @@
 {
-  "name": "EinoAgentEs8",
+  "name": "EinoAgentTools",
   "node_trigger_mode": "AllPredecessor",
   "input_type": {
     "title": "*UserMessage"
@@ -983,7 +983,7 @@
               "isPtr": false
             }
           },
-          "config_input": "{\"MaxStep\":25}"
+          "config_input": "{\"ToolReturnDirectly\":{\"einoAdditionalPropertyInput\":[]},\"MaxStep\":25}"
         },
         "is_io_type_mutable": false,
         "version": "1.0.0"

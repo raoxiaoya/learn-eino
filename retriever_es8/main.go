@@ -1,4 +1,4 @@
-package main
+package retriever_es8
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	"github.com/cloudwego/eino-ext/components/retriever/es8/search_mode"
 )
 
-func main() {
+func Main() {
 	ctx := context.Background()
 
 	// es 支持多种连接方式

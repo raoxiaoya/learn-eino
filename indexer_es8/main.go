@@ -1,4 +1,4 @@
-package main
+package indexer_es8
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/cloudwego/eino/components/document"
 )
 
-func main() {
+func Main() {
 	ctx := context.Background()
 
 	err := indexMarkdownFiles(ctx, "./eino-docs")
