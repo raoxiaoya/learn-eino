@@ -19,9 +19,8 @@ func Main2() {
 	callbacks.AppendGlobalHandlers(&loggerCallbacks{})
 
 	// 1. create an instance of ChatTemplate as 1st Graph Node
-	systemTpl := `你是一名房产经纪人，结合用户的薪酬和工作，使用 user_info API，为其提供相关的房产信息。邮箱是必须的`
 	chatTpl := prompt.FromMessages(schema.FString,
-		schema.SystemMessage(systemTpl),
+		schema.SystemMessage(`你是一名房产经纪人，结合用户的薪酬和工作，使用 user_info API，为其提供相关的房产信息。邮箱是必须的`),
 		schema.MessagesPlaceholder("message_histories", true),
 		schema.UserMessage("{user_query}"),
 	)

@@ -11,19 +11,22 @@ import (
 
 // reactAgentLambda component initialization function of node 'ReactAgent' in graph 'EinoAgentTools'
 func reactAgentLambda(ctx context.Context) (lba *compose.Lambda, err error) {
-	// TODO Modify component configuration here.
-	config := &react.AgentConfig{
-		MaxStep:            25,
-		ToolReturnDirectly: map[string]struct{}{}}
 	chatModel, err := newChatModel(ctx)
 	if err != nil {
 		return nil, err
 	}
-	config.ToolCallingModel = chatModel
-	
+
 	taskTool, err := task.NewTaskTool(ctx, nil)
-	config.ToolsConfig.Tools = []tool.BaseTool{taskTool}
-	ins, err := react.NewAgent(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+
+	ins, err := react.NewAgent(ctx, &react.AgentConfig{
+		ToolCallingModel: chatModel,
+		ToolsConfig: compose.ToolsNodeConfig{
+			Tools: []tool.BaseTool{taskTool},
+		},
+	})
 	if err != nil {
 		return nil, err
 	}

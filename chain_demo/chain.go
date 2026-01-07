@@ -11,10 +11,12 @@ import (
 	"github.com/cloudwego/eino/schema"
 )
 
-// Chain 可以视为是 Graph 的简化封装
-
+// Chain 可以视为是 Graph 的简化封装。
+// chain 根据 append 的先后顺序来编排，当然，底层还是会转换成 graph 来执行。
+// graph 则是先 addNode，然后 addEdge 来编排，graph 更加灵活。
+// 从结果来看，chain 只能是顺序结构，而 graph 则可以通过 addEdge 来实现任意结构。
 func Main() {
-	Main4()
+	Main8()
 }
 
 func Main1() {
@@ -27,6 +29,9 @@ func Main1() {
 
 	// 定义 chain 第一个节点的输入类型，和最后一个节点的输出类型
 	// 中间各个节点的类型，要满足上游的输出类型与下游的输入类型一致
+	//
+	// ChatTemplate 节点，input: map[string]any, output: []*schema.Message
+	// ChatModel 节点，input: []*schema.Message, output: *schema.Message
 	chain := compose.NewChain[map[string]any, *schema.Message]().
 		AppendChatTemplate(
 			prompt.FromMessages(schema.FString,

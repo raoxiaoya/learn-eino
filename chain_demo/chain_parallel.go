@@ -43,7 +43,6 @@ func Main4() {
 		return kvs, nil
 	})
 
-	// build parallel node
 	parallel := compose.NewParallel()
 	parallel.
 		AddLambda("role", compose.InvokableLambda(func(ctx context.Context, kvs map[string]any) (string, error) {
@@ -69,7 +68,8 @@ func Main4() {
 	rolePlayerChain := compose.NewChain[map[string]any, *schema.Message]()
 	rolePlayerChain.
 		AppendLambda(compose.InvokableLambda(func(ctx context.Context, kvs map[string]any) (map[string]any, error) {
-			for k, v := range kvs {
+			// 查看 parallel 输出类型
+         for k, v := range kvs {
 				fmt.Printf("%v: %v\n", k, v)
 			}
 			return kvs, nil

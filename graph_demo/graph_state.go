@@ -44,11 +44,13 @@ func Main3() {
 		return "InvokableLambda: " + in, nil
 	})
 
+	// in 的类型要与对应节点的输入类型一致
 	l1StateToInput := func(ctx context.Context, in string, state *testState) (string, error) {
 		state.ms = append(state.ms, in)
 		return in, nil
 	}
 
+	// out 的类型要与对应节点的输出类型一致
 	l1StateToOutput := func(ctx context.Context, out string, state *testState) (string, error) {
 		state.ms = append(state.ms, out)
 		return out, nil

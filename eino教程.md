@@ -837,13 +837,127 @@ currentTask.output, currentTask.err = t.runWrapper(ctx, currentTask.call.action,
 
 
 
+### 关于 tools call
+
+tools 是由chatModel调用的，因此需要将 tools 节点放在 chatModel 的下面，并且将 tools info 注入到 chatModel 
+
+```bash
+chatModel.BindForcedTools([]*schema.ToolInfo{info})
+或者
+chatModel.BindTools([]*schema.ToolInfo{info})
+或者
+chatModel.WithTools([]*schema.ToolInfo{info})
+```
+
+可以使用 react 节点作为 tools call 调度中心。
+
+其实 react 内部也是构建一个 graph（chatTemplate+chatModel+toolsNode）。
+
+以下是 react 示例
+
+```go
+func Main1() {
+	ctx := context.Background()
+
+	chatModel, err := util.GetChatModel(ctx)
+	if err != nil {
+		fmt.Printf("Get ChatModel failed, err=%v\n", err)
+		return
+	}
+
+	taskTool, err := task.NewTaskTool(ctx, nil)
+	if err != nil {
+		fmt.Printf("NewTaskTool failed, err=%v\n", err)
+		return
+	}
+
+	agent, err := react.NewAgent(ctx, &react.AgentConfig{
+		ToolCallingModel: chatModel,
+		ToolsConfig: compose.ToolsNodeConfig{
+			Tools: []tool.BaseTool{taskTool},
+		},
+		// 直接将 tool 的结果返回，而不用再回到 chatModel 进行处理
+		ToolReturnDirectly: map[string]struct{}{"task_manager": {}},
+		MessageModifier: func(ctx context.Context, input []*schema.Message) []*schema.Message {
+			res := make([]*schema.Message, 0, len(input)+1)
+			res = append(res, schema.SystemMessage("你是一个后台操作员，使用 task_manager API，对task进行操作"))
+			res = append(res, input...)
+			return res
+		},
+	})
+
+	response, err := agent.Generate(ctx, []*schema.Message{schema.UserMessage(`帮我在task manager系统创建一个任务：
+标题：eino_agent任务标题；
+内容：eino_agent任务内容；
+截止时间：2025-12-25T15:15；
+任务ID：eac76c5a-629a-45d2-8c4e-0ac769a470f0；
+任务状态：未完成；
+创建时间：2026-01-07T10:03:07+08:00
+`)})
+
+	if err != nil {
+		fmt.Printf("Generate failed, err=%v\n", err)
+		return
+	}
+	fmt.Println(response.Role, response.Content)
+}
+```
+
+或者将 react 包装成 graph/chain 的一个节点，然后 add lambda
+
+```go
+lba, err = compose.AnyLambda(ins.Generate, ins.Stream, nil, nil)
+```
+
+在 graph 中，也可以直接将 tools node 直接添加在 chatModel 下游。
+
+```go
+toolsNode, err := compose.NewToolNode(ctx, &compose.ToolsNodeConfig{
+    Tools: []tool.BaseTool{taskTool},
+})
+
+g := compose.NewGraph[map[string]any, []*schema.Message]()
+_ = g.AddChatTemplateNode(nodeKeyOfTemplate, chatTpl)
+_ = g.AddChatModelNode(nodeKeyOfChatModel, chatModel)
+_ = g.AddToolsNode(nodeKeyOfTools, toolsNode)
+_ = g.AddEdge(compose.START, nodeKeyOfTemplate)
+_ = g.AddEdge(nodeKeyOfTemplate, nodeKeyOfChatModel)
+_ = g.AddEdge(nodeKeyOfChatModel, nodeKeyOfTools)
+_ = g.AddEdge(nodeKeyOfTools, compose.END)
+```
+
+往往 tool node 作为最后一个节点。
+
+chatModel 是与用户交互的节点，它来决定调用哪个工具或者什么工具都不调用，tool 的返回信息会回到 chatModel ，最后由 chatModel 加工后响应给用户。或者设置 ToolReturnDirectly，这样 agent 会直接将 tool 的结果返回，不会再调用chatModel 。不管怎么返回，其输出类型依然是`*schema.Message`，只是 role 分别是`assistant`和`tool`。
+
+```bash
+assistant 任务已成功创建！以下是创建的任务详情：
+
+- **任务ID**: c19aa787-31c4-4b18-92c5-26a3525ece44（系统自动生成了新的ID）
+- **标题**: eino_agent任务标题
+- **内容**: eino_agent任务标题
+- **状态**: 未完成
+- **截止时间**: 2025-12-25T15:15
+- **创建时间**: 2026-01-07T10:03:07+08:00（系统自动生成的当前时间）
+
+请注意，系统自动为任务生成了新的ID（c19aa787-31c4-4b18-92c5-26a3525ece44），而不是使用您提供的eac76c5a-629a-45d2-8c4e-0ac769a470f0。创建时间也由系
+统自动设置为当前时间。
+```
+
+```bash
+tool {"status":"success","task_list":[{"id":"04dca8bd-552d-4559-8acf-faebeff5d898","title":"eino_agent任务标题","content":"eino_agent任务标题","co
+mpleted":false,"deadline":"2025-12-25T15:15","is_deleted":false,"created_at":"2026-01-07T10:13:41+08:00"}],"error":""}
+```
+
+
+
+但是这里面也是有不确定性，比如 chatModel 能否正确的理解你的意思，chatModel 能正确的构建参数等等。
+
 
 
 ```bash
 
 ```
-
-
 
 
 

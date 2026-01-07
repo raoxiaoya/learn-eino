@@ -1,10 +1,10 @@
 package main
 
 import (
-	"learn-eino/chain_demo"
+	"learn-eino/react_agent"
 	_ "learn-eino/util/env"
 )
 
 func main() {
-	chain_demo.Main()
+	react_agent.Main()
 }

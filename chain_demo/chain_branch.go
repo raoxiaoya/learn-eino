@@ -16,6 +16,8 @@ func Main2() {
 
 	// 分支条件
 	// 类型：func(ctx context.Context, in T) (endNode string, err error)
+	//
+	// branch 作为一个整体，conditon 的输入输出类型，要与各个分支 Lambda 的输入输出类型一致
 	branchCondition := func(ctx context.Context, in map[string]any) (string, error) {
 		switch in["language"] {
 		case "golang":
@@ -26,7 +28,7 @@ func Main2() {
 			return "lambda_php", nil
 		}
 	}
-
+	
 	branch1 := compose.InvokableLambda(func(ctx context.Context, in map[string]any) (map[string]any, error) {
 		in["role"] = "Golang专家"
 		return in, nil

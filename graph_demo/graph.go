@@ -13,7 +13,7 @@ import (
 )
 
 func Main() {
-	Main3()
+	Main6()
 }
 
 func Main1() {
