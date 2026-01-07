@@ -955,13 +955,62 @@ mpleted":false,"deadline":"2025-12-25T15:15","is_deleted":false,"created_at":"20
 
 
 
-```bash
+### react  与 stream
 
+在使用 react 的时候发现一个奇怪的现象，使用 Generate 运行 react 是好的，能够正常调用 tool 并响应信息。在使用 Stream 运行 react 的时候，在 chatModel 第一次输出之后，由于 EOF 导致程序退出，于是无法调用 tool。按理说，chatModel 应该会多次输出，第一次告诉你，它将要做什么，然后去调用tool，然后合并结果再次输出，如果涉及到多个 tool，那么 chatModel 就会有更多的输出。也就是说，这个stream是不应该中途中断的。在 github 上找到了对应的 [issue](https://github.com/cloudwego/eino/issues/613)
+
+这个问题跟模型有关系，解决方案为[StreamToolCallChecker](https://www.cloudwego.io/zh/docs/eino/core_modules/flow_integration_components/react_agent_manual/#streamtoolcallchecker)
+
+默认的 toolCallChecker 为 firstChunkStreamToolCallChecker
+
+```go
+func firstChunkStreamToolCallChecker(_ context.Context, sr *schema.StreamReader[*schema.Message]) (bool, error) {
+	defer sr.Close()
+
+	for {
+		msg, err := sr.Recv()
+		if err == io.EOF {
+			return false, nil
+		}
+		if err != nil {
+			return false, err
+		}
+
+		if len(msg.ToolCalls) > 0 {
+			return true, nil
+		}
+
+		if len(msg.Content) == 0 { // skip empty chunks at the front
+			continue
+		}
+
+		return false, nil
+	}
+}
 ```
 
+此方法的问题在于，如果在输出 tool call 之前先输出了别的内容，此方法会返回 false，然而这并不准确。我用的 deepseek 模型会先告诉你它要干什么。
 
+```go
+func CustomToolCallChecker(ctx context.Context, sr *schema.StreamReader[*schema.Message]) (bool, error) {
+	defer sr.Close()
+	for {
+		msg, err := sr.Recv()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return false, err
+		}
+		if len(msg.ToolCalls) > 0 {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+```
 
-
+作用就是不会输出chatModel在中途返回的信息，只要最终的结果。
 
 
 

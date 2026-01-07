@@ -2,8 +2,12 @@ package util
 
 import (
 	"context"
+	"errors"
+	"io"
 	"learn-eino/util/env"
 	"os"
+
+	"github.com/cloudwego/eino/schema"
 
 	embeddingArk "github.com/cloudwego/eino-ext/components/embedding/ark"
 	"github.com/cloudwego/eino-ext/components/model/ark"
@@ -38,4 +42,21 @@ func GetChatModel(ctx context.Context) (*ark.ChatModel, error) {
 		Model:   os.Getenv("ARK_CHAT_MODEL"),
 	})
 	return chatModel, err
+}
+
+func CustomToolCallChecker(ctx context.Context, sr *schema.StreamReader[*schema.Message]) (bool, error) {
+	defer sr.Close()
+	for {
+		msg, err := sr.Recv()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return false, err
+		}
+		if len(msg.ToolCalls) > 0 {
+			return true, nil
+		}
+	}
+	return false, nil
 }

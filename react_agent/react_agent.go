@@ -2,7 +2,9 @@ package react_agent
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"learn-eino/util"
 	"learn-eino/util/tool/task"
 
@@ -37,7 +39,7 @@ func Main1() {
 		return
 	}
 
-	agent, err := react.NewAgent(ctx, &react.AgentConfig{
+	reactAgent, err := react.NewAgent(ctx, &react.AgentConfig{
 		ToolCallingModel: chatModel,
 		ToolsConfig: compose.ToolsNodeConfig{
 			Tools: []tool.BaseTool{taskTool},
@@ -50,9 +52,10 @@ func Main1() {
 			res = append(res, input...)
 			return res
 		},
+		StreamToolCallChecker: util.CustomToolCallChecker,
 	})
 
-	response, err := agent.Generate(ctx, []*schema.Message{schema.UserMessage(`帮我在task manager系统创建一个任务：
+	response, err := reactAgent.Stream(ctx, []*schema.Message{schema.UserMessage(`帮我在task manager系统创建一个任务：
 标题：eino_agent任务标题；
 内容：eino_agent任务内容；
 截止时间：2025-12-25T15:15；
@@ -60,10 +63,20 @@ func Main1() {
 任务状态：未完成；
 创建时间：2026-01-07T10:03:07+08:00
 `)})
-
 	if err != nil {
 		fmt.Printf("Generate failed, err=%v\n", err)
 		return
 	}
-	fmt.Println(response.Role, response.Content)
+	defer response.Close()
+	for {
+		msg, err := response.Recv()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			fmt.Printf("failed to recv: %v", err)
+			return
+		}
+		fmt.Printf("%v", msg.Content)
+	}
 }

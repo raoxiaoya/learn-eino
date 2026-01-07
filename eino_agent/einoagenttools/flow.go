@@ -2,6 +2,7 @@ package einoagenttools
 
 import (
 	"context"
+	"learn-eino/util"
 	"learn-eino/util/tool/task"
 
 	"github.com/cloudwego/eino/components/tool"
@@ -26,6 +27,7 @@ func reactAgentLambda(ctx context.Context) (lba *compose.Lambda, err error) {
 		ToolsConfig: compose.ToolsNodeConfig{
 			Tools: []tool.BaseTool{taskTool},
 		},
+		StreamToolCallChecker: util.CustomToolCallChecker,
 	})
 	if err != nil {
 		return nil, err

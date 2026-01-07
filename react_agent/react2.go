@@ -34,7 +34,7 @@ import (
 
 func Main3() {
 	ctx := context.Background()
-	
+
 	arkModel, err := util.GetChatModel(ctx)
 	if err != nil {
 		fmt.Printf("failed to create chat model: %v\n", err)
@@ -49,6 +49,7 @@ func Main3() {
 		ToolsConfig: compose.ToolsNodeConfig{
 			Tools: []tool.BaseTool{restaurantTool, dishTool},
 		},
+		StreamToolCallChecker: util.CustomToolCallChecker,
 	})
 	if err != nil {
 		fmt.Printf("failed to create agent: %v\n", err)
@@ -80,7 +81,7 @@ func Main3() {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			fmt.Printf("failed to recv: %v\n", err)
+			fmt.Printf("failed to recv: %v", err)
 			return
 		}
 
@@ -88,6 +89,7 @@ func Main3() {
 		fmt.Printf("%v", msg.Content)
 	}
 
+	time.Sleep(3 * time.Second)
+
 	fmt.Println("===== finished =====")
-	time.Sleep(2 * time.Second)
 }

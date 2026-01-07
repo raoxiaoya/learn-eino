@@ -19,6 +19,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/schema"
@@ -63,6 +64,7 @@ func (t *ToolQueryRestaurants) Info(ctx context.Context) (*schema.ToolInfo, erro
 // 返回的 content 会作为 schema.Message 的 content, 一般来说是作为大模型的输入, 因此处理成大模型能更好理解的结构最好.
 // 因此，如果是 json 格式，就需要注意 key 和 value 的表意, 不要用 int Enum 代表一个业务含义，比如 `不要用 1 代表 male, 2 代表 female` 这类.
 func (t *ToolQueryRestaurants) InvokableRun(ctx context.Context, argumentsInJSON string, opts ...tool.Option) (string, error) {
+	fmt.Println("ToolQueryRestaurants:", argumentsInJSON)
 	// 解析参数
 	p := &QueryRestaurantsParam{}
 	err := json.Unmarshal([]byte(argumentsInJSON), p)
@@ -125,6 +127,7 @@ func (t *ToolQueryDishes) Info(ctx context.Context) (*schema.ToolInfo, error) {
 }
 
 func (t *ToolQueryDishes) InvokableRun(ctx context.Context, argumentsInJSON string, opts ...tool.Option) (string, error) {
+	fmt.Println("ToolQueryDishes:", argumentsInJSON)
 	// 解析参数
 	p := &QueryDishesParam{}
 	err := json.Unmarshal([]byte(argumentsInJSON), p)
