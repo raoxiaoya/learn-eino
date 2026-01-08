@@ -239,23 +239,18 @@ GET http://127.0.0.1:9200/eino_example
 
 
 
-elasticsearch中的dense_vector类型，在版本**8.0 – 8.11**中，默认的最高维度是2048，在 **8.12+**之后是4096，当然，这个值越高计算越慢。数据的维度必须小于es能存储的维度，否则会报错。
+注意：elasticsearch中的dense_vector类型，在版本**8.0 – 8.11**中，默认的最高维度是2048，在 **8.12+**之后是4096，当然，这个值越高计算越慢。数据的维度必须小于es能存储的维度，否则会报错。
 
 
 
-配置文件 env.bat
+配置文件`.env`
 
 ```bash
-set ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
-set ARK_API_KEY=xxxx
-set ARK_EMBEDDING_MODEL=doubao-embedding-large-text-250515
-set ARK_CHAT_MODEL=deepseek-v3-2-251201
-set ES_USERNAME=
-set ES_PASSWORD=
-set ES_HTTP_CA_CERT_PATH=
+ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
+ARK_API_KEY=xxxx
+ARK_EMBEDDING_MODEL=doubao-embedding-large-text-250515
+ARK_CHAT_MODEL=deepseek-v3-2-251201
 ```
-
-在当前命令行运行一下bat。
 
 
 
@@ -405,7 +400,6 @@ func indexMarkdownFiles(ctx context.Context, dir string) error {
 ```
 
 ```bash
-> go run main.go
 [start] indexing file: eino-docs\_index.md
 [done] indexing file: eino-docs\_index.md, len of parts: 4
 [start] indexing file: eino-docs\agent_llm_with_tools.md
@@ -619,13 +613,13 @@ eino dev 可以将编排好的 graph 导出为 json schema，也可以导入 jso
 
 **一些说明**
 
-template role： system, user, tool, assistant
+**template role**： system, user, tool, assistant
 
-system message 在这里是指令，告诉智能体大致要做什么
+system message 在这里是指令，告诉智能体大致要做什么，这个一定要写清楚。
 
-assistant message 由agent输出，说明调用哪些tool
+assistant message 由agent输出，就是助手与你的交互。
 
-tool message 由agent输出，说明调用了哪个工具，参数和结果是什么
+tool message 由agent输出，说明调用了哪个工具，参数和结果是什么。
 
 
 
@@ -722,7 +716,7 @@ config.ToolsConfig.Tools = []tool.BaseTool{toolIns21, toolIns22, toolIns23, tool
 ```bash
 帮我在task manager系统创建一个任务：
 标题：eino_agent任务标题；
-内容：eino_agent任务标题；
+内容：eino_agent任务内容；
 截止时间：2025-12-25T15:15
 ```
 
@@ -801,39 +795,11 @@ func main() {
 5-12-30 12:12:12","is_deleted":false,"created_at":"2025-12-25T14:48:06+08:00"}],"error":""}
 ```
 
-发现它是能正常写入的
+说明它是能正常写入的
 
 ```json
 {"id":"f0a28183-ef37-416a-87c4-5e957fbe969d","title":"test task","content":"test content","completed":false,"deadline":"2025-12-30 12:12:12","is_deleted":false,"created_at":"2025-12-23T18:16:33+08:00"}
 ```
-
-```bash
-在eino项目中搜索InvokableRun，找到compose/tool_node.go:553的 Invoke方法
-
-在 flow/agent/react.go 中，将 tools 作为一个key为tools的节点，注入到 graph.nodes 数组中（先将 ToolsNode 转换成 graphNode），name 为 Tools
-
-在graph.go中，Graph编译时为每个节点创建chanCall对象，每个chanCall包含节点的composableRunnable和其他执行信息。
-
-在graph_run.go的runner.run方法中，计算下一个要执行的任务
-调用taskManager.submit提交任务
-```
-
-在`graph_manager.go`的`taskManager.execute`方法中，使用`runWrapper`调用节点：
-
-```go
-currentTask.output, currentTask.err = t.runWrapper(ctx, currentTask.call.action, currentTask.input, currentTask.option...)
-```
-
-- `runWrapper`根据调用类型（流式/非流式）使用`runnableInvoke`或`runnableTransform`
-- 最终调用`composableRunnable`的`i`（invoke）或`t`（transform）方法，执行节点的实际功能
-
-
-
-### 关键组件
-
-- **composableRunnable**：在`runnable.go`中定义，是所有可执行对象的包装器
-- **taskManager**：管理任务的提交、执行和结果收集
-- **runner**：Graph的执行器，负责协调整个执行流程
 
 
 
@@ -959,9 +925,9 @@ mpleted":false,"deadline":"2025-12-25T15:15","is_deleted":false,"created_at":"20
 
 在使用 react 的时候发现一个奇怪的现象，使用 Generate 运行 react 是好的，能够正常调用 tool 并响应信息。在使用 Stream 运行 react 的时候，在 chatModel 第一次输出之后，由于 EOF 导致程序退出，于是无法调用 tool。按理说，chatModel 应该会多次输出，第一次告诉你，它将要做什么，然后去调用tool，然后合并结果再次输出，如果涉及到多个 tool，那么 chatModel 就会有更多的输出。也就是说，这个stream是不应该中途中断的。在 github 上找到了对应的 [issue](https://github.com/cloudwego/eino/issues/613)
 
-这个问题跟模型有关系，解决方案为[StreamToolCallChecker](https://www.cloudwego.io/zh/docs/eino/core_modules/flow_integration_components/react_agent_manual/#streamtoolcallchecker)
+这个问题跟模型有关系，解决方案为 [StreamToolCallChecker](https://www.cloudwego.io/zh/docs/eino/core_modules/flow_integration_components/react_agent_manual/#streamtoolcallchecker)
 
-默认的 toolCallChecker 为 firstChunkStreamToolCallChecker
+agent 是否去调用 tool ，是根据 chatModel 的返回信息，如果是在 stream 上，则需要每个 chunk 都要检查，但这样做效率低下，因此 eino 默认的 toolCallChecker 为 firstChunkStreamToolCallChecker，也就是只检查第一个 chunk。
 
 ```go
 func firstChunkStreamToolCallChecker(_ context.Context, sr *schema.StreamReader[*schema.Message]) (bool, error) {
@@ -989,7 +955,7 @@ func firstChunkStreamToolCallChecker(_ context.Context, sr *schema.StreamReader[
 }
 ```
 
-此方法的问题在于，如果在输出 tool call 之前先输出了别的内容，此方法会返回 false，然而这并不准确。我用的 deepseek 模型会先告诉你它要干什么。
+此方法的问题在于，如果在输出 tool call 之前先输出了别的内容，此方法会返回 false，意味着 agent 不会，然而这并不准确。我用的 deepseek 模型会先告诉你它要干什么，后面才会返回 tool 信息，因此需要改进一下
 
 ```go
 func CustomToolCallChecker(ctx context.Context, sr *schema.StreamReader[*schema.Message]) (bool, error) {
@@ -1010,7 +976,11 @@ func CustomToolCallChecker(ctx context.Context, sr *schema.StreamReader[*schema.
 }
 ```
 
-作用就是不会输出chatModel在中途返回的信息，只要最终的结果。
+这样就不会输出chatModel在中途返回的信息，只要最终的结果。
+
+```bash
+
+```
 
 
 
