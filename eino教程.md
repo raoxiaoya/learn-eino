@@ -978,15 +978,7 @@ func CustomToolCallChecker(ctx context.Context, sr *schema.StreamReader[*schema.
 
 这样就不会输出chatModel在中途返回的信息，只要最终的结果。
 
-```bash
-
-```
-
-
-
-
-
-
+![image-20260108165858614](D:\dev\php\magook\trunk\server\md\img\image-20260108165858614.png)
 
 
 
@@ -999,16 +991,6 @@ func CustomToolCallChecker(ctx context.Context, sr *schema.StreamReader[*schema.
 ##### Langfuse
 
 如果在运行时，在 .env 文件中指定了 `LANGFUSE_PUBLIC_KEY` 和 `LANGFUSE_SECRET_KEY`，便可在 Langfuse 平台中，登录对应的账号，查看请求的 Trace 详情。
-
-
-
-
-
-
-
---------------------
-
-
 
 
 
