@@ -982,15 +982,314 @@ func CustomToolCallChecker(ctx context.Context, sr *schema.StreamReader[*schema.
 
 
 
-### 观测(可选)
+### 性能观测
 
 ##### APMPlus
 
 如果在运行时，在 .env 文件中指定了 `APMPLUS_APP_KEY`，便可在 [火山引擎 APMPlus](https://console.volcengine.com/apmplus-server) 平台中，登录对应的账号，查看 Trace 以及 Metrics 详情。
 
+点服务端监控，开通APMPLUS服务。
+
+点击[接入中心](https://console.volcengine.com/observe/apmplus-server/region:apmplus-server+cn-beijing/server/access/service)，复制 APP Key
+
+Eino接入教程：https://www.volcengine.com/docs/6431/1471121?lang=zh
+
+
+
+```go
+// 创建apmplus handler
+cbh, showdown, err := apmplus.NewApmplusHandler(&apmplus.Config{
+    Host: "apmplus-cn-beijing.volces.com:4317",
+    AppKey:      os.Getenv("APMPLUS_APP_KEY"),
+    ServiceName: "eino-app",
+    Release:     "release/v0.0.1",
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+// 设置apmplus为全局callback
+callbacks.AppendGlobalHandlers(cbh)
+
+// 运行 agent 
+
+// 最后，等待所有trace和metrics上报完成后退出
+showdown(ctx)
+```
+
+以官方的查询菜品的DEMO为例：[eino-examples/flow/agent/react](https://github.com/cloudwego/eino-examples/tree/main/flow/agent/react)
+
+![image-20260109104705394](D:\dev\php\magook\trunk\server\md\img\image-20260109104705394.png)
+
+![image-20260109105349574](D:\dev\php\magook\trunk\server\md\img\image-20260109105349574.png)
+
+
+
 ##### Langfuse
 
 如果在运行时，在 .env 文件中指定了 `LANGFUSE_PUBLIC_KEY` 和 `LANGFUSE_SECRET_KEY`，便可在 Langfuse 平台中，登录对应的账号，查看请求的 Trace 详情。
+
+
+
+##### React流程分析
+
+![image-20260112093558744](D:\dev\php\magook\trunk\server\md\img\image-20260112093558744.png)
+
+React 
+
+```bash
+input
+
+system：你是一个帮助用户推荐餐厅和菜品的助手，根据用户的需要，查询餐厅信息并推荐，查询餐厅的菜品并推荐。
+user：我在北京，给我推荐一些菜，需要有口味辣一点的菜，至少推荐有 2 家餐厅
+```
+
+```bash
+output
+
+assistant：
+根据查询结果，我为您推荐以下北京餐厅的辣味菜品：
+
+## 推荐餐厅及辣味菜品：
+
+### 1. 云边小馆（评分：3分）
+**推荐辣味菜品：**
+- **韩式辣白菜**（20元）- 这可是开过光的辣白菜，好吃得很，评分9分
+- **酸辣土豆丝**（10元）- 酸酸辣辣的土豆丝，评分9分  
+- **酸辣粉**（5元）- 酸酸辣辣的粉，价格实惠
+
+### 2. 聚福轩食府（评分：5分）
+**推荐辣味菜品：**
+- **火辣辣的吻**（60元）- 凉拌猪嘴，口味辣而不腻，评分9分
+- **辣椒拌皮蛋**（15元）- 擂椒皮蛋，下饭的神器，评分8分
+- **大刀回锅肉**（40元）- 经典的回锅肉，肉很大，评分8分（微辣）
+
+## 推荐总结：
+两家餐厅都有不错的辣味菜品选择：
+- **云边小馆**的辣味菜品更偏向韩式和酸辣口味，价格相对实惠
+- **聚福轩食府**的辣味菜品更传统，特别是"火辣辣的吻"这道菜评分很高，辣而不腻
+
+如果您喜欢韩式辣味和酸辣口味，推荐云边小馆；如果您喜欢传统中式辣味和凉拌菜，推荐聚福轩食府。两家餐厅都有多种辣味菜品可供选择。
+```
+
+ChatModel 
+
+```bash
+input
+
+system：你是一个帮助用户推荐餐厅和菜品的助手，根据用户的需要，查询餐厅信息并推荐，查询餐厅的菜品并推荐。
+user：我在北京，给我推荐一些菜，需要有口味辣一点的菜，至少推荐有 2 家餐厅
+```
+
+```bash
+output
+
+assistant：
+我来帮您在北京推荐一些口味辣一点的菜品和餐厅。首先让我查询一下北京的餐厅信息。
+```
+
+tools
+
+```bash
+input：
+{"role":"assistant","content":"我来帮您在北京推荐一些口味辣一点的菜品和餐厅。首先让我查询一下北京的餐厅信息。\n\n","tool_calls":[{"index":0,"id":"call_9zao24vvrqpwm6qn2c575ei9","type":"function","function":{"name":"query_restaurants","arguments":"{\"location\": \"北京\", \"topn\": 10}"}}],"response_meta":{"finish_reason":"tool_calls","usage":{"prompt_tokens":464,"prompt_token_details":{"cached_tokens":0},"completion_tokens":82,"total_tokens":546,"completion_token_details":{}}},"extra":{"ark-model-name":"deepseek-v3-2-251201","ark-service-tier":"default","ark-request-id":"02176792534812543cc1cf6ced7e437334ae832707c2826e6512f"}}
+
+output：
+[[{"role":"tool","content":"[{\"id\":\"1001\",\"name\":\"云边小馆\",\"place\":\"北京\",\"desc\":\"\",\"score\":3},{\"id\":\"1002\",\"name\":\"聚福轩食府\",\"place\":\"北京\",\"desc\":\"\",\"score\":5},{\"id\":\"1003\",\"name\":\"花影食舍\",\"place\":\"上海\",\"desc\":\"\",\"score\":10}]","tool_call_id":"call_9zao24vvrqpwm6qn2c575ei9","tool_name":"query_restaurants"}]]
+```
+
+query_restaurants 
+
+```bash
+input：
+"{\"location\": \"北京\", \"topn\": 10}"
+
+output：
+"[{\"id\":\"1001\",\"name\":\"云边小馆\",\"place\":\"北京\",\"desc\":\"\",\"score\":3},{\"id\":\"1002\",\"name\":\"聚福轩食府\",\"place\":\"北京\",\"desc\":\"\",\"score\":5},{\"id\":\"1003\",\"name\":\"花影食舍\",\"place\":\"上海\",\"desc\":\"\",\"score\":10}]"
+```
+
+ChatModel 
+
+```bash
+input
+
+system：你是一个帮助用户推荐餐厅和菜品的助手，根据用户的需要，查询餐厅信息并推荐，查询餐厅的菜品并推荐。
+user：我在北京，给我推荐一些菜，需要有口味辣一点的菜，至少推荐有 2 家餐厅
+assistant：我来帮您在北京推荐一些口味辣一点的菜品和餐厅。首先让我查询一下北京的餐厅信息。
+tool：[{"id":"1001","name":"云边小馆","place":"北京","desc":"","score":3},{"id":"1002","name":"聚福轩食府","place":"北京","desc":"","score":5},{"id":"1003","name":"花影食舍","place":"上海","desc":"","score":10}]
+```
+
+```bash
+output
+
+assistant：我看到北京有两家餐厅。让我分别查询这两家餐厅的菜品，看看哪些是辣味的：
+```
+
+tools
+
+```bash
+input：
+{"role":"assistant","content":"我看到北京有两家餐厅。让我分别查询这两家餐厅的菜品，看看哪些是辣味的：\n\n\n\n","tool_calls":[{"index":0,"id":"call_akfts8ntgtxq62h30i3kpce6","type":"function","function":{"name":"query_dishes","arguments":"{\"restaurant_id\": \"1001\", \"topn\": 10}"}}],"response_meta":{"finish_reason":"tool_calls","usage":{"prompt_tokens":635,"prompt_token_details":{"cached_tokens":0},"completion_tokens":85,"total_tokens":720,"completion_token_details":{}}},"extra":{"ark-service-tier":"default","ark-request-id":"02176792535212643cc1cf6ced7e437334ae832707c28266cb682","ark-model-name":"deepseek-v3-2-251201"}}
+
+output：
+[[{"role":"tool","content":"[{\"name\":\"红烧肉\",\"desc\":\"一块红烧肉\",\"price\":20,\"score\":8},{\"name\":\"清泉牛肉\",\"desc\":\"很多的水煮牛肉\",\"price\":50,\"score\":8},{\"name\":\"清炒小南瓜\",\"desc\":\"炒的糊糊的南瓜\",\"price\":5,\"score\":5},{\"name\":\"韩式辣白菜\",\"desc\":\"这可是开过光的辣白菜，好吃得很\",\"price\":20,\"score\":9},{\"name\":\"酸辣土豆丝\",\"desc\":\"酸酸辣辣的土豆丝\",\"price\":10,\"score\":9},{\"name\":\"酸辣粉\",\"desc\":\"酸酸辣辣的粉\",\"price\":5,\"score\":0}]","tool_call_id":"call_akfts8ntgtxq62h30i3kpce6","tool_name":"query_dishes"}]]
+```
+
+query_dishes 
+
+```bash
+input：
+"{\"restaurant_id\": \"1001\", \"topn\": 10}"
+
+output：
+"[{\"name\":\"红烧肉\",\"desc\":\"一块红烧肉\",\"price\":20,\"score\":8},{\"name\":\"清泉牛肉\",\"desc\":\"很多的水煮牛肉\",\"price\":50,\"score\":8},{\"name\":\"清炒小南瓜\",\"desc\":\"炒的糊糊的南瓜\",\"price\":5,\"score\":5},{\"name\":\"韩式辣白菜\",\"desc\":\"这可是开过光的辣白菜，好吃得很\",\"price\":20,\"score\":9},{\"name\":\"酸辣土豆丝\",\"desc\":\"酸酸辣辣的土豆丝\",\"price\":10,\"score\":9},{\"name\":\"酸辣粉\",\"desc\":\"酸酸辣辣的粉\",\"price\":5,\"score\":0}]"
+```
+
+ChatModel 
+
+```bash
+input
+
+system：你是一个帮助用户推荐餐厅和菜品的助手，根据用户的需要，查询餐厅信息并推荐，查询餐厅的菜品并推荐。
+user：我在北京，给我推荐一些菜，需要有口味辣一点的菜，至少推荐有 2 家餐厅
+assistant：我来帮您在北京推荐一些口味辣一点的菜品和餐厅。首先让我查询一下北京的餐厅信息。
+tool：[{"id":"1001","name":"云边小馆","place":"北京","desc":"","score":3},{"id":"1002","name":"聚福轩食府","place":"北京","desc":"","score":5},{"id":"1003","name":"花影食舍","place":"上海","desc":"","score":10}]
+assistant：我看到北京有两家餐厅。让我分别查询这两家餐厅的菜品，看看哪些是辣味的：
+tool：[{"name":"红烧肉","desc":"一块红烧肉","price":20,"score":8},{"name":"清泉牛肉","desc":"很多的水煮牛肉","price":50,"score":8},{"name":"清炒小南瓜","desc":"炒的糊糊的南瓜","price":5,"score":5},{"name":"韩式辣白菜","desc":"这可是开过光的辣白菜，好吃得很","price":20,"score":9},{"name":"酸辣土豆丝","desc":"酸酸辣辣的土豆丝","price":10,"score":9},{"name":"酸辣粉","desc":"酸酸辣辣的粉","price":5,"score":0}]
+```
+
+```bash
+output
+
+assistant：现在查询第二家餐厅的菜品：
+```
+
+tools
+
+```bash
+input
+
+{"role":"assistant","content":"现在查询第二家餐厅的菜品：\n\n","tool_calls":[{"index":0,"id":"call_l7k9djvc5ek8ztegmlwafz1q","type":"function","function":{"name":"query_dishes","arguments":"{\"restaurant_id\": \"1002\", \"topn\": 10}"}}],"response_meta":{"finish_reason":"tool_calls","usage":{"prompt_tokens":875,"prompt_token_details":{"cached_tokens":0},"completion_tokens":71,"total_tokens":946,"completion_token_details":{}}},"extra":{"ark-request-id":"02176792535621643cc1cf6ced7e437334ae832707c28268bf259","ark-model-name":"deepseek-v3-2-251201","ark-service-tier":"default"}}
+```
+
+```bash
+output
+
+[[{"role":"tool","content":"[{\"name\":\"红烧排骨\",\"desc\":\"一块一块的排骨\",\"price\":43,\"score\":7},{\"name\":\"大刀回锅肉\",\"desc\":\"经典的回锅肉, 肉很大\",\"price\":40,\"score\":8},{\"name\":\"火辣辣的吻\",\"desc\":\"凉拌猪嘴，口味辣而不腻\",\"price\":60,\"score\":9},{\"name\":\"辣椒拌皮蛋\",\"desc\":\"擂椒皮蛋，下饭的神器\",\"price\":15,\"score\":8}]","tool_call_id":"call_l7k9djvc5ek8ztegmlwafz1q","tool_name":"query_dishes"}]]
+```
+
+query_dishes 
+
+```bash
+input
+
+"{\"restaurant_id\": \"1002\", \"topn\": 10}"
+```
+
+```bash
+output
+
+"[{\"name\":\"红烧排骨\",\"desc\":\"一块一块的排骨\",\"price\":43,\"score\":7},{\"name\":\"大刀回锅肉\",\"desc\":\"经典的回锅肉, 肉很大\",\"price\":40,\"score\":8},{\"name\":\"火辣辣的吻\",\"desc\":\"凉拌猪嘴，口味辣而不腻\",\"price\":60,\"score\":9},{\"name\":\"辣椒拌皮蛋\",\"desc\":\"擂椒皮蛋，下饭的神器\",\"price\":15,\"score\":8}]"
+```
+
+ChatModel 
+
+```bash
+input
+
+system：你是一个帮助用户推荐餐厅和菜品的助手，根据用户的需要，查询餐厅信息并推荐，查询餐厅的菜品并推荐。
+user：我在北京，给我推荐一些菜，需要有口味辣一点的菜，至少推荐有 2 家餐厅
+assistant：我来帮您在北京推荐一些口味辣一点的菜品和餐厅。首先让我查询一下北京的餐厅信息。
+tool：[{"id":"1001","name":"云边小馆","place":"北京","desc":"","score":3},{"id":"1002","name":"聚福轩食府","place":"北京","desc":"","score":5},{"id":"1003","name":"花影食舍","place":"上海","desc":"","score":10}]
+assistant：我看到北京有两家餐厅。让我分别查询这两家餐厅的菜品，看看哪些是辣味的：
+tool：[{"name":"红烧肉","desc":"一块红烧肉","price":20,"score":8},{"name":"清泉牛肉","desc":"很多的水煮牛肉","price":50,"score":8},{"name":"清炒小南瓜","desc":"炒的糊糊的南瓜","price":5,"score":5},{"name":"韩式辣白菜","desc":"这可是开过光的辣白菜，好吃得很","price":20,"score":9},{"name":"酸辣土豆丝","desc":"酸酸辣辣的土豆丝","price":10,"score":9},{"name":"酸辣粉","desc":"酸酸辣辣的粉","price":5,"score":0}]
+assistant：现在查询第二家餐厅的菜品
+tool：[{"name":"红烧排骨","desc":"一块一块的排骨","price":43,"score":7},{"name":"大刀回锅肉","desc":"经典的回锅肉, 肉很大","price":40,"score":8},{"name":"火辣辣的吻","desc":"凉拌猪嘴，口味辣而不腻","price":60,"score":9},{"name":"辣椒拌皮蛋","desc":"擂椒皮蛋，下饭的神器","price":15,"score":8}]
+```
+
+```bash
+output
+
+根据查询结果，我为您推荐以下北京餐厅的辣味菜品：
+
+## 推荐餐厅及辣味菜品：
+
+### 1. 云边小馆（评分：3分）
+**推荐辣味菜品：**
+- **韩式辣白菜**（20元）- 这可是开过光的辣白菜，好吃得很，评分9分
+- **酸辣土豆丝**（10元）- 酸酸辣辣的土豆丝，评分9分  
+- **酸辣粉**（5元）- 酸酸辣辣的粉，价格实惠
+
+### 2. 聚福轩食府（评分：5分）
+**推荐辣味菜品：**
+- **火辣辣的吻**（60元）- 凉拌猪嘴，口味辣而不腻，评分9分
+- **辣椒拌皮蛋**（15元）- 擂椒皮蛋，下饭的神器，评分8分
+- **大刀回锅肉**（40元）- 经典的回锅肉，肉很大，评分8分（微辣）
+
+## 推荐总结：
+两家餐厅都有不错的辣味菜品选择：
+- **云边小馆**的辣味菜品更偏向韩式和酸辣口味，价格相对实惠
+- **聚福轩食府**的辣味菜品更传统，特别是"火辣辣的吻"这道菜评分很高，辣而不腻
+
+如果您喜欢韩式辣味和酸辣口味，推荐云边小馆；如果您喜欢传统中式辣味和凉拌菜，推荐聚福轩食府。两家餐厅都有多种辣味菜品可供选择。
+```
+
+
+
+
+
+### Callback调试
+
+`RunInfo`表示自己是谁，也就是当前节点信息
+
+`callbacks.Handler`
+
+```go
+type Handler interface {
+    OnStart(ctx context.Context, info *RunInfo, input CallbackInput) context.Context
+    
+    OnEnd(ctx context.Context, info *RunInfo, output CallbackOutput) context.Context
+
+    OnError(ctx context.Context, info *RunInfo, err error) context.Context
+
+    OnStartWithStreamInput(ctx context.Context, info *RunInfo,
+        input *schema.StreamReader[CallbackInput]) context.Context
+    
+    OnEndWithStreamOutput(ctx context.Context, info *RunInfo,
+        output *schema.StreamReader[CallbackOutput]) context.Context
+}
+```
+
+
+
+如果一个 Handler，不想关注所有的 5 个触发时机，只想关注一部分，比如只关注 OnStart，建议使用 `NewHandlerBuilder().OnStartFn(...).Build()`。如果不想关注所有的组件类型，只想关注特定组件，比如 ChatModel，建议使用 `NewHandlerHelper().ChatModel(...).Handler()`，可以只接收 ChatModel 的回调并拿到一个具体类型的 CallbackInput/CallbackOutput。
+
+```go
+handler := callbacks.NewHandlerBuilder().
+		OnStartFn(
+			func(ctx context.Context, info *callbacks.RunInfo, input callbacks.CallbackInput) context.Context {
+				log.Printf("onStart, runInfo: %v, input: %v", info, input)
+				return ctx
+			}).
+		OnEndFn(
+			func(ctx context.Context, info *callbacks.RunInfo, output callbacks.CallbackOutput) context.Context {
+				log.Printf("onEnd, runInfo: %v, out: %v", info, output)
+				return ctx
+			}).
+		Build()
+```
+
+
+
+全局注入
+
+```go
+callbacks.AppendGlobalHandlers(handler)
+```
+
+
+
+
 
 
 
